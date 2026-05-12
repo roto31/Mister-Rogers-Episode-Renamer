@@ -12,6 +12,22 @@
 
 ## Data flow
 
+```mermaid
+flowchart TD
+    A[SwiftUI Views] --> B[RenameViewModel @MainActor]
+    B --> C{Catalog source}
+    C -->|Bundled MRN| D[MRNEpisodeCatalog + EpisodeDatabase]
+    C -->|TheTVDB| E[TheTvdbClient + TvdbCatalogCache]
+    D --> F[RenameService.planRenames]
+    E --> F
+    F --> G[Preview rows]
+    G --> H{User confirms?}
+    H -->|No| I[No file changes]
+    H -->|Yes| J[RenameService.executePendingRenames]
+    J --> K[FileService moves files]
+    K --> L[Undo stack for last batch]
+```
+
 1. User picks **catalog mode** (bundled MRN vs TheTVDB). For TheTVDB, user provides API key (Keychain or `TVDB_API_KEY`) and series id/URL, then **Load** builds a `TvdbEpisodeCatalog` (with optional disk cache).
 2. User selects URLs (files/folders) + optional **recursive** scan.
 3. **Preview** runs `RenameService.planRenames` off the main thread using the active `EpisodeCatalog` and `RenameMatchStrategy` (production number vs season/episode).
@@ -19,6 +35,25 @@
 5. **Undo** reverses `.renamed` rows from the last batch by moving files back along stored `(movedTo, original)` pairs.
 
 ## Matching
+
+```mermaid
+flowchart TD
+    A[Input file stem] --> B{Active match strategy}
+    B -->|Production number| C[Find 4-digit value in 1...1800]
+    C --> D{Looks like year 1968...2001?}
+    D -->|Yes| E[Ignore candidate]
+    D -->|No| F[Lookup by production id]
+    F --> G{Found episode?}
+    G -->|Yes| H[Format MRN target]
+    G -->|No| I[Skip: not in bundled database]
+    B -->|Season/episode| J[Parse S01E02, s1e2, or 1x02]
+    J --> K{Found SxE?}
+    K -->|No| L[Skip: no season/episode pattern]
+    K -->|Yes| M[Lookup TheTVDB episode index]
+    M --> N{Unique match?}
+    N -->|Yes| O[Format TheTVDB target]
+    N -->|No| P[Skip: missing or ambiguous episode]
+```
 
 ### Mister Rogers (bundled)
 
@@ -44,6 +79,28 @@
 - Regeneration script: [`Scripts/build_episodes_json.py`](Scripts/build_episodes_json.py) (requires `TVDB_API_KEY`; never commit keys). Verification: [`Scripts/verify_bundled_catalog.py`](Scripts/verify_bundled_catalog.py).
 
 ## TheTVDB runtime client
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant Keychain
+    participant Cache as Application Support cache
+    participant TVDB as TheTVDB API
+    User->>App: Enter API key and series id/URL
+    App->>Keychain: Save or read API key
+    App->>Cache: Check tvdb-series cache
+    alt Cache hit
+        Cache-->>App: Return cached episodes
+    else Cache miss
+        App->>TVDB: Login with API key
+        TVDB-->>App: Token
+        App->>TVDB: Fetch series and paged episodes
+        TVDB-->>App: Series + episode data
+        App->>Cache: Atomic JSON write
+    end
+    App-->>User: Loaded catalog for preview
+```
 
 - **Auth:** `POST https://api4.thetvdb.com/v4/login` with JSON `{"apikey":…}`.
 - **Series name:** `GET …/series/{id}`.

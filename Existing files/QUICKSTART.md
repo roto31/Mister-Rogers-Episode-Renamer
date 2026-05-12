@@ -87,6 +87,21 @@ The files will now be renamed! ✓
 
 ---
 
+## Quick decision path
+
+```mermaid
+flowchart TD
+    A[Install or confirm Python] --> B[Test --interactive with 1066]
+    B --> C{Lookup works?}
+    C -->|No| D[Check script path and Python install]
+    C -->|Yes| E[Run folder dry run]
+    E --> F{Output looks right?}
+    F -->|No| G[Fix filename production number or database entry]
+    G --> E
+    F -->|Yes| H[Run again with --commit]
+    H --> I[Review renamed files]
+```
+
 ## Most Common Commands
 
 **Rename all episodes in a folder (with preview first):**

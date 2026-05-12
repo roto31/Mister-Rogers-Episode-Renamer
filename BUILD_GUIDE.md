@@ -25,6 +25,25 @@ Run the binary:
 
 The window obeys the **900×600** minimum size set in code.
 
+## Build path
+
+```mermaid
+flowchart TD
+    A[Repository root] --> B{How do you want to run?}
+    B -->|Develop/debug| C[swift build or swift run]
+    B -->|Release executable| D[swift build -c release]
+    B -->|Xcode UI| E[Open Package.swift]
+    C --> F[Run tests with swift test]
+    D --> F
+    E --> F
+    F --> G{Need double-clickable app?}
+    G -->|No| H[Use SwiftPM executable]
+    G -->|Yes| I[Create Xcode app target or wrap binary]
+    I --> J{Public distribution?}
+    J -->|Yes| K[Sign and notarize]
+    J -->|No| L[Informal local app bundle]
+```
+
 ## Command-line options
 
 This v1 build is GUI-only; there are **no** CLI flags. Use Preview + Rename inside the app.

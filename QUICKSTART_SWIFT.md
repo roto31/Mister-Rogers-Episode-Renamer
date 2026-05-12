@@ -33,6 +33,24 @@ swift run
 
 **Tip:** Drag files or folders onto the dashed drop zone to add them to the selection.
 
+## Quick decision path
+
+```mermaid
+flowchart TD
+    A[Start app] --> B{Renaming Mister Rogers files?}
+    B -->|Yes| C[Use bundled catalog]
+    B -->|No| D[Use TheTVDB catalog]
+    D --> E[Save API key and load series]
+    C --> F[Select files or folder]
+    E --> F
+    F --> G[Preview]
+    G --> H{Preview correct?}
+    H -->|No| I[Adjust filenames or catalog source]
+    I --> G
+    H -->|Yes| J[Rename Files]
+    J --> K[Open in Finder or Undo Last Batch]
+```
+
 ## 5. Next steps
 
 - Regenerate **895** bundled episodes with [`Scripts/build_episodes_json.py`](Scripts/build_episodes_json.py) (needs `TVDB_API_KEY`; see [README.md](README.md)).  

@@ -20,6 +20,39 @@ S03E01 - Mister Rogers' Neighborhood - "Models of the Homes in the Neighborhood 
 
 ---
 
+## Process overview
+
+```mermaid
+flowchart TD
+    A[Choose file or folder] --> B[Extract production number from filename]
+    B --> C{Production number found?}
+    C -->|No| D[Skip file or use interactive lookup]
+    C -->|Yes| E{Production exists in database?}
+    E -->|No| F[Skip and expand database if needed]
+    E -->|Yes| G[Format SxEx filename]
+    G --> H{Dry run only?}
+    H -->|Yes| I[Print planned rename]
+    H -->|No --commit| J{Target already exists?}
+    J -->|Yes| K[Skip collision]
+    J -->|No| L[Rename file]
+```
+
+```mermaid
+flowchart TD
+    A[Need episode metadata] --> B[Watch on-screen production number]
+    B --> C[Check Neighborhood Archive]
+    C --> D{Archive confirms title and air date?}
+    D -->|No| E[Cross-check Wikipedia, IMDb, or PBS]
+    D -->|Yes| F[Add database entry]
+    E --> G{Sources agree?}
+    G -->|No| H[Hold for manual review]
+    G -->|Yes| F
+    F --> I[Test with --interactive]
+    I --> J{Output correct?}
+    J -->|No| K[Fix entry]
+    J -->|Yes| L[Use in batch rename]
+```
+
 ## Requirements
 
 - **Python 3.6+** (usually pre-installed on macOS)

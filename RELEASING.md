@@ -7,6 +7,23 @@ This document describes how maintainers cut releases and how **Semantic Versioni
 - **Current default:** Unsigned **`MisterRogersRenamer`** executable from `swift build -c release` (see [BUILD_GUIDE.md](BUILD_GUIDE.md)). The release workflow uploads `MisterRogersRenamer-macos-<arch>` (runner architecture, e.g. `arm64` or `x86_64`) to [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases).
 - **Signed `.app` bundles** are out of scope for the automated workflow; add a separate pipeline later if needed.
 
+## Release flow
+
+```mermaid
+flowchart TD
+    A[main is green] --> B[Update CHANGELOG.md]
+    B --> C{Bundled catalog changed?}
+    C -->|Yes| D[Verify manifest SHA and dataRevision]
+    C -->|No| E[Choose SemVer version]
+    D --> E
+    E --> F[Create annotated vX.Y.Z tag]
+    F --> G[Push tag]
+    G --> H[Release workflow verifies catalog]
+    H --> I[Build release executable]
+    I --> J[Create or update GitHub Release]
+    J --> K[Attach macOS binary and generated notes]
+```
+
 ## Artifact boundary: bundled catalog vs downloadable data (**Project decision**)
 
 - **Shipped inside the tagged binary:** The bundled **`episodes.json`** and sidecar **`episodes.manifest.json`** (see [`Sources/MisterRogersRenamerCore/Resources/`](Sources/MisterRogersRenamerCore/Resources/)). Any revision to bundled episode rows or the manifest’s `contentSha256` requires **at least one SemVer bump** (almost always PATCH) **and** a new `v*` tag before users can pick up that data—not a silent re-upload under the same version.
@@ -27,13 +44,13 @@ Expose **`dataRevision`** in GitHub Release notes when cutting a tag so support 
 
 Use headings or bullets that distinguish intent (maps well to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)):
 
-| Category | Typical meaning |
+|Category|Typical meaning|
 |---------|----------------|
-| **Code — Fix** | App bug fixes, renaming behavior corrections |
-| **Code — Feature** | New UX, catalog modes, file patterns |
-| **Data — Episode refresh** | Regenerated bundled JSON from Archive + TVDB (broader sweep) |
-| **Data — Correction** | Small targeted bundled metadata fixes |
-| **Build / CI** | Workflows, packaging, reproducibility |
+|**Code — Fix**|App bug fixes, renaming behavior corrections|
+|**Code — Feature**|New UX, catalog modes, file patterns|
+|**Data — Episode refresh**|Regenerated bundled JSON from Archive + TVDB (broader sweep)|
+|**Data — Correction**|Small targeted bundled metadata fixes|
+|**Build / CI**|Workflows, packaging, reproducibility|
 
 When the manifest’s `contentSha256` changed, mention **`dataRevision`** explicitly in **Unreleased** / the version section before tagging.
 
@@ -42,10 +59,12 @@ When the manifest’s `contentSha256` changed, mention **`dataRevision`** explic
 1. Ensure `main` is green (CI passing).
 2. Update [CHANGELOG.md](CHANGELOG.md) on `main` for the version you are about to tag (see sections below).
 3. Create an annotated tag (example `v1.2.3`):
+
    ```bash
    git tag -a v1.2.3 -m "v1.2.3"
    git push origin v1.2.3
    ```
+
 4. **GitHub Actions** [Release workflow](.github/workflows/release.yml) runs on push of `v*`, verifies the bundled catalog fingerprint, builds the binary, and creates or updates the GitHub **Release** (composed notes prepend **dataRevision / SHA‑256**, then GitHub‑generated changelog when available).
 
 **Manual dispatch** (e.g. re-upload asset for an existing tag):
@@ -54,13 +73,30 @@ When the manifest’s `contentSha256` changed, mention **`dataRevision`** explic
 
 ## SemVer and bundled data vs. code
 
+```mermaid
+flowchart TD
+    A[Change ready for release] --> B{Breaks documented behavior or data shape?}
+    B -->|Yes| C[MAJOR]
+    B -->|No| D{Adds user-visible capability or broad data refresh?}
+    D -->|Yes| E[MINOR]
+    D -->|No| F{Fix, docs, CI, or targeted data correction?}
+    F -->|Yes| G[PATCH]
+    F -->|No| H[Document maintainer judgment in changelog]
+    E --> I{Bundled episodes changed?}
+    G --> I
+    C --> I
+    H --> I
+    I -->|Yes| J[Include dataRevision and contentSha256]
+    I -->|No| K[Release notes need code/change summary only]
+```
+
 This project is an application, not a library; we still use SemVer for **communicating impact** to users and contributors.
 
-| Change | Typical level | Examples |
+|Change|Typical level|Examples|
 |--------|---------------|----------|
-| **PATCH** | Fixes, data-only corrections | Typos in app UI; corrections to bundled `episodes.json` (metadata fixes) that don’t change how the app **interprets** files; CI/docs-only |
-| **MINOR** | Additive behavior | New catalog mode, new file patterns, new options; larger `episodes.json` refreshes that only add/fix episode rows users expect |
-| **MAJOR** | Breaking or high-impact | Documented rename rules change; removal of a mode; JSON shape change that breaks older app versions if they ever shared the file |
+|**PATCH**|Fixes, data-only corrections|Typos in app UI; corrections to bundled `episodes.json` (metadata fixes) that don’t change how the app **interprets** files; CI/docs-only|
+|**MINOR**|Additive behavior|New catalog mode, new file patterns, new options; larger `episodes.json` refreshes that only add/fix episode rows users expect|
+|**MAJOR**|Breaking or high-impact|Documented rename rules change; removal of a mode; JSON shape change that breaks older app versions if they ever shared the file|
 
 Team judgment applies: if a “data” change materially changes user-visible episode titles for many files, you may choose **MINOR** instead of **PATCH**—**document the call** in the changelog.
 
@@ -80,12 +116,25 @@ This cannot be committed as code; repeat for new default branches if you rename 
 
 ## Release automation tooling (manual tags today)
 
+```mermaid
+flowchart TD
+    A[Manual tags become bottleneck] --> B{Conventional Commits reliable on main?}
+    B -->|No| C[Keep manual tags]
+    B -->|Yes| D{Want release PRs and curated changelog?}
+    D -->|Yes| E[Use release-please]
+    D -->|No| F{Want fully automated publish?}
+    F -->|Yes| G[Evaluate semantic-release and recovery workflows]
+    F -->|No| C
+    E --> H[Keep Actions responsible for binary artifacts]
+    G --> H
+```
+
 Tag-driven publishing remains the source of truth. If manual tagging becomes the bottleneck **after** the team adopts consistent [Conventional Commits](https://www.conventionalcommits.org/), pick **one**:
 
-| Tool | Fits when… | Caveats |
+|Tool|Fits when…|Caveats|
 |------|---------------|---------|
-| **[release-please](https://github.com/googleapis/release-please)** | You want **`CHANGELOG.md` + merged “release PRs”**, simple `simple`/`rust`/custom manifest versioning, minimal JS stack | Tune `release-type` / config for SPM; artifacts still attach via Actions after tag or via extra job |
-| **[semantic-release](https://github.com/semantic-release/semantic-release)** | Every commit message truly follows Conventions and you want **fully automated publish** driven by analyzes | Requires plugin setup for SPM/Swift binaries and tighter branch rules; brittle if commit discipline slips |
+|**[release-please](https://github.com/googleapis/release-please)**|You want **`CHANGELOG.md` + merged “release PRs”**, simple `simple`/`rust`/custom manifest versioning, minimal JS stack|Tune `release-type` / config for SPM; artifacts still attach via Actions after tag or via extra job|
+|**[semantic-release](https://github.com/semantic-release/semantic-release)**|Every commit message truly follows Conventions and you want **fully automated publish** driven by analyzes|Requires plugin setup for SPM/Swift binaries and tighter branch rules; brittle if commit discipline slips|
 
 Recommendation: Prefer **release-please** until Conventional Commit compliance is measurable on `main`; only invest in semantic-release once messages are reliably machine-classifiable **and** the team budgets time for semantic-release plugins and recovery workflows.
 

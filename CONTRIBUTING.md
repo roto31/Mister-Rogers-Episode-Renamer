@@ -7,6 +7,25 @@ Thank you for helping improve **Mister Rogers Renamer**. This project is open so
 - **Swift app:** See [BUILD_GUIDE.md](BUILD_GUIDE.md) and [QUICKSTART_SWIFT.md](QUICKSTART_SWIFT.md). Target **macOS 12+**.
 - **Bundled episode JSON:** Built with Python in [`Scripts/build_episodes_json.py`](Scripts/build_episodes_json.py) (requires `TVDB_API_KEY` locally—never commit keys). The running app loads JSON from the Swift bundle, not Python.
 
+## Contribution flow
+
+```mermaid
+flowchart TD
+    A[Pick focused change] --> B{Touches bundled episode data?}
+    B -->|Yes| C[Regenerate episodes.json and manifest]
+    C --> D[Run verify_bundled_catalog.py]
+    B -->|No| E[Build and test relevant code]
+    D --> F[Update changelog with SemVer rationale]
+    E --> G[Open PR]
+    F --> G
+    G --> H[Fill PR template]
+    H --> I[CI: build, test, Python syntax, data digest]
+    I --> J{CI green and review complete?}
+    J -->|No| K[Patch focused fixes]
+    K --> I
+    J -->|Yes| L[Squash or merge]
+```
+
 ## Pull requests
 
 - Open a PR against the default branch (usually `main`). GitHub inserts [`.github/pull_request_template.md`](.github/pull_request_template.md)—fill bundled-data semver items when **`episodes.json`** / **`episodes.manifest.json`** change.

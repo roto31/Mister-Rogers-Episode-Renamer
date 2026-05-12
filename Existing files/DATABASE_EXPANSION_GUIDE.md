@@ -34,6 +34,40 @@ NOTE: Production numbers do NOT align 1:1 with season boundaries.
       This database uses production numbers (the original on-screen identifier).
 
 ============================================================================
+DATABASE EXPANSION PROCESS
+============================================================================
+
+```mermaid
+flowchart TD
+    A[Pick production number or season] --> B[Open Neighborhood Archive page]
+    B --> C{Page has season, episode, title, air date?}
+    C -->|No| D[Cross-check Wikipedia, IMDb, or PBS]
+    C -->|Yes| E[Add EPISODE_DATABASE entry]
+    D --> F{Enough agreement to trust entry?}
+    F -->|No| G[Mark for review]
+    F -->|Yes| E
+    E --> H[Run --interactive lookup]
+    H --> I{Lookup output correct?}
+    I -->|No| J[Fix fields or formatting]
+    J --> H
+    I -->|Yes| K[Test dry-run rename]
+    K --> L[Commit with updated docs and stats]
+```
+
+```mermaid
+flowchart TD
+    A[Choose expansion plan] --> B{Highest accuracy needed now?}
+    B -->|Yes| C[Manual entry for priority seasons]
+    B -->|No| D{Need broad coverage quickly?}
+    D -->|Yes| E[Write scraper, then manually verify failures]
+    D -->|No| F[Open season-based community issues]
+    C --> G[Validate entries]
+    E --> G
+    F --> G
+    G --> H[Update database stats and release notes]
+```
+
+============================================================================
 HOW TO ADD ENTRIES
 ============================================================================
 

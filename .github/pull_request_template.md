@@ -1,6 +1,6 @@
-<!-- Keep guidance short so external contributors aren't overwhelmed. -->
+# Summary
 
-## Summary
+<!-- Keep guidance short so external contributors aren't overwhelmed. -->
 
 Briefly explain **what** changed and **why**.
 
@@ -13,6 +13,19 @@ Tick any that apply and call out semver impact in your description.
 - [ ] **Data — Episode refresh** (regenerated **`episodes.json`** / **`episodes.manifest.json`**)
 - [ ] **Data — Correction** (small targeted edits to bundled episodes)
 - [ ] **Build / CI**
+
+## Review decision flow
+
+```mermaid
+flowchart TD
+    A[PR opened] --> B{Touches bundled episode resources?}
+    B -->|No| C[Run normal build and tests]
+    B -->|Yes| D[Regenerate JSON and manifest]
+    D --> E[Verify contentSha256]
+    E --> F[Update changelog SemVer rationale]
+    C --> G[Ready for review]
+    F --> G
+```
 
 ## Bundled episodes & versioning
 

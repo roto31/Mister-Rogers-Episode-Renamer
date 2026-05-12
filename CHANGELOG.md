@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Change classification flow
+
+```mermaid
+flowchart TD
+    A[New change] --> B{What changed?}
+    B -->|Swift behavior| C[Code - Fix or Feature]
+    B -->|episodes.json or manifest| D[Data - Refresh or Correction]
+    B -->|Workflow or packaging| E[Build / CI]
+    B -->|Docs only| F[Documentation]
+    C --> G[Choose PATCH, MINOR, or MAJOR impact]
+    D --> H[Record dataRevision and SemVer rationale]
+    E --> I[Record operational impact]
+    F --> J[Record user-facing doc update]
+    G --> K[Add entry under Unreleased]
+    H --> K
+    I --> K
+    J --> K
+```
+
 ## [Unreleased]
 
 ### Added

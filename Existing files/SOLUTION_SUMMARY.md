@@ -130,6 +130,43 @@ Currently in database with **full verification:**
    └─ misterrogers-renamer.sh (Bash wrapper)
 ```
 
+### Process and decision diagrams
+
+```mermaid
+flowchart TD
+    A[CLI invocation] --> B{Interactive mode?}
+    B -->|Yes| C[Prompt for production number]
+    C --> D[Lookup database entry]
+    B -->|No| E[Collect file or directory inputs]
+    E --> F{Recursive flag?}
+    F -->|Yes| G[Walk subdirectories]
+    F -->|No| H[Use direct files only]
+    G --> I[Process each supported video]
+    H --> I
+    I --> J[Extract production number]
+    J --> K{Known episode?}
+    K -->|No| L[Skip with reason]
+    K -->|Yes| M[Create target filename]
+    M --> N{Commit mode?}
+    N -->|No| O[Print dry-run plan]
+    N -->|Yes| P[Rename if no collision]
+```
+
+```mermaid
+flowchart TD
+    A[Database expansion needed] --> B{Need exact priority episodes?}
+    B -->|Yes| C[Manual Archive entry]
+    B -->|No| D{Need fast broad population?}
+    D -->|Yes| E[Scripted scrape plus validation]
+    D -->|No| F[Community season PRs]
+    C --> G[Test interactive lookup]
+    E --> G
+    F --> G
+    G --> H{Entries verified?}
+    H -->|No| I[Hold or correct entries]
+    H -->|Yes| J[Use in release]
+```
+
 ### Database Structure
 
 ```python
