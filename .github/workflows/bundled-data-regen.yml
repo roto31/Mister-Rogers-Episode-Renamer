@@ -1,0 +1,61 @@
+# Trusted workflow: regenerate bundled episodes + manifest, open PR if drift.
+# Requires repository secret TVDB_API_KEY — never forks.
+# Docs: Scripts/build_episodes_json.py, RELEASING.md
+name: Bundled catalog regen
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * 0" # Sundays 09:00 UTC
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  regen-pr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configure git author (bot commits)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Regenerate episodes.json + episodes.manifest.json
+        env:
+          TVDB_API_KEY: ${{ secrets.TVDB_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${TVDB_API_KEY:-}" ]]; then
+            echo "::notice title=Skipping::Repository secret TVDB_API_KEY not set — regen skipped."
+            exit 0
+          fi
+          python3 Scripts/build_episodes_json.py
+
+      - name: Ensure bundled-data label exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "bundled-data" --description "Touches bundled episodes.json / manifest" --color "0366D6" 2>/dev/null || true
+
+      - name: Open pull request (if drift)
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(data): refresh bundled episodes + manifest"
+          title: "[data] Automated bundled catalog refresh"
+          body: |
+            Regenerated via `Scripts/build_episodes_json.py` (scheduled workflow or manual dispatch).
+
+            ** Maintainer checklist **
+            - [ ] CI passes
+            - [ ] Pick SemVer PATCH vs MINOR and update `CHANGELOG.md` before tagging (`RELEASING.md`)
+
+            Automated PR — do not merge without review.
+          branch: chore/automated-bundled-episodes-${{ github.run_id }}
+          labels: bundled-data
+          draft: false
+          delete-branch: true

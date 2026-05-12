@@ -1,0 +1,11 @@
+.DS_Store
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj
+*.xcworkspace
+!default.pbxuser
+*.xcuserstate
+*.xcuserdatad
+Scripts/.cache/
+.env

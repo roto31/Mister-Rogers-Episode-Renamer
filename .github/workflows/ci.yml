@@ -1,0 +1,96 @@
+# Continuous integration: Swift build/test on macOS + Python script hygiene.
+# Path classification — https://github.com/dorny/paths-filter
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      bundle_data: ${{ steps.filter.outputs.bundle_data }}
+      app_code: ${{ steps.filter.outputs.app_code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Paths filter (bundled catalog vs application code)
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            bundle_data:
+              - 'Sources/MisterRogersRenamerCore/Resources/episodes.json'
+              - 'Sources/MisterRogersRenamerCore/Resources/episodes.manifest.json'
+            app_code:
+              - 'Sources/**/*.swift'
+              - 'Tests/**'
+              - 'Package.swift'
+              - 'Scripts/**'
+
+  build-test:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Swift build (debug)
+        run: swift build
+
+      - name: Swift build (release)
+        run: swift build -c release
+
+      - name: Swift test
+        run: swift test
+
+      - name: Python compile + bundled catalog digest check
+        run: |
+          python3 -m py_compile \
+            Scripts/build_episodes_json.py \
+            Scripts/fetch_neighborhood_archive_episodes.py \
+            Scripts/verify_bundled_catalog.py \
+            Scripts/compose_github_release_notes.py
+          python3 Scripts/verify_bundled_catalog.py
+
+  label-pr:
+    needs: classify
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure workflow labels exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "bundled-data" --description "Touches bundled episodes.json / manifest" --color "0366D6" 2>/dev/null || true
+          gh label create "application-code" --description "Swift / tests / SPM / Scripts" --color "5319E7" 2>/dev/null || true
+      - name: Labels from path filter outputs
+        if: needs.classify.outputs.bundle_data == 'true' || needs.classify.outputs.app_code == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          PR="${{ github.event.pull_request.number }}"
+          args=()
+          if [[ "${{ needs.classify.outputs.bundle_data }}" == "true" ]]; then
+            args+=(--add-label "bundled-data")
+          fi
+          if [[ "${{ needs.classify.outputs.app_code }}" == "true" ]]; then
+            args+=(--add-label "application-code")
+          fi
+          if [[ "${#args[@]}" -eq 0 ]]; then
+            exit 0
+          fi
+          gh pr edit "$PR" "${args[@]}"
