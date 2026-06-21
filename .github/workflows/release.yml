@@ -16,10 +16,11 @@ on:
 permissions:
   contents: write
 
-jobs:
 concurrency:
   group: m4-macos
   cancel-in-progress: false
+
+jobs:
   release:
     runs-on: [self-hosted, macOS, ARM64, m4-homelab]
     steps:

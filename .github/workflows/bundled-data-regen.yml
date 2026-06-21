@@ -12,6 +12,10 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: m4-macos
+  cancel-in-progress: false
+
 jobs:
   regen-pr:
     runs-on: ubuntu-latest
