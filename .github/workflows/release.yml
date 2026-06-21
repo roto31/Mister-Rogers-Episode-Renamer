@@ -17,8 +17,11 @@ permissions:
   contents: write
 
 jobs:
+concurrency:
+  group: m4-macos
+  cancel-in-progress: false
   release:
-    runs-on: macos-latest
+    runs-on: [self-hosted, macOS, ARM64, m4-homelab]
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
