@@ -13,10 +13,11 @@ permissions:
   contents: read
   pull-requests: write
 
-jobs:
 concurrency:
   group: m4-macos
   cancel-in-progress: false
+
+jobs:
   classify:
     runs-on: ubuntu-latest
     permissions:
@@ -41,6 +42,7 @@ concurrency:
               - 'Tests/**'
               - 'Package.swift'
               - 'Scripts/**'
+              - 'MacApp/**'
 
   build-test:
     runs-on: [self-hosted, macOS, ARM64, m4-homelab]
@@ -48,11 +50,23 @@ concurrency:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Swift build (debug)
+      - name: Swift Package (debug Core)
         run: swift build
 
-      - name: Swift build (release)
+      - name: Swift Package (release Core)
         run: swift build -c release
+
+      - name: Xcode app (release)
+        run: |
+          set -euo pipefail
+          DERIVED="$(mktemp -d)"
+          trap 'rm -rf "${DERIVED}"' EXIT
+          xcodebuild -project "MacApp/MisterRogersRenamer.xcodeproj" \
+            -scheme MisterRogersRenamer \
+            -configuration Release \
+            -destination "platform=macOS" \
+            -derivedDataPath "${DERIVED}" \
+            build
 
       - name: Swift test
         run: swift test
@@ -78,7 +92,7 @@ concurrency:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh label create "bundled-data" --description "Touches bundled episodes.json / manifest" --color "0366D6" 2>/dev/null || true
-          gh label create "application-code" --description "Swift / tests / SPM / Scripts" --color "5319E7" 2>/dev/null || true
+          gh label create "application-code" --description "Swift / tests / SPM / MacApp / Scripts" --color "5319E7" 2>/dev/null || true
       - name: Labels from path filter outputs
         if: needs.classify.outputs.bundle_data == 'true' || needs.classify.outputs.app_code == 'true'
         env:

@@ -5,7 +5,7 @@ let package = Package(
     name: "MisterRogersRenamer",
     platforms: [.macOS(.v12)],
     products: [
-        .executable(name: "MisterRogersRenamer", targets: ["MisterRogersRenamer"])
+        .library(name: "MisterRogersRenamerCore", targets: ["MisterRogersRenamerCore"]),
     ],
     dependencies: [],
     targets: [
@@ -18,15 +18,10 @@ let package = Package(
                 .copy("Resources/episodes.manifest.json"),
             ]
         ),
-        .executableTarget(
-            name: "MisterRogersRenamer",
-            dependencies: ["MisterRogersRenamerCore"],
-            path: "Sources/MisterRogersRenamer"
-        ),
         .testTarget(
             name: "MisterRogersRenamerTests",
             dependencies: ["MisterRogersRenamerCore"],
             path: "Tests/MisterRogersRenamerTests"
-        )
+        ),
     ]
 )

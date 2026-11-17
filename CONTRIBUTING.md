@@ -4,7 +4,7 @@ Thank you for helping improve **Mister Rogers Renamer**. This project is open so
 
 ## Development setup
 
-- **Swift app:** See [BUILD_GUIDE.md](BUILD_GUIDE.md) and [QUICKSTART_SWIFT.md](QUICKSTART_SWIFT.md). Target **macOS 12+**.
+- **Swift app:** See [BUILD_GUIDE.md](BUILD_GUIDE.md) and [QUICKSTART_SWIFT.md](QUICKSTART_SWIFT.md). Target **macOS 12+**. For a persisted **`build/Releases/<semver>/`** tree, run **`Scripts/package_local_release.sh`** ([`build/Releases/README.md`](build/Releases/README.md)).
 - **Bundled episode JSON:** Built with Python in [`Scripts/build_episodes_json.py`](Scripts/build_episodes_json.py) (requires `TVDB_API_KEY` locally—never commit keys). The running app loads JSON from the Swift bundle, not Python.
 
 ## Contribution flow
@@ -29,7 +29,7 @@ flowchart TD
 ## Pull requests
 
 - Open a PR against the default branch (usually `main`). GitHub inserts [`.github/pull_request_template.md`](.github/pull_request_template.md)—fill bundled-data semver items when **`episodes.json`** / **`episodes.manifest.json`** change.
-- CI runs on every PR: Swift debug/release build, `swift test`, and Python syntax check on `Scripts/*.py` (no network, no secrets).
+- CI runs on every PR: Swift Package debug/release (**`swift build`**), **`xcodebuild`** Release for the **`MacApp/`** Xcode project, **`swift test`**, and Python syntax check on `Scripts/*.py` (no network, no secrets).
 - Keep changes focused; describe **what** and **why** in the PR body.
 
 ## Commit messages (recommended)

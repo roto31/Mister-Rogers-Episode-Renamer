@@ -2,13 +2,13 @@
 
 ## Overview
 
-**MisterRogersRenamer** is a SwiftPM **executable** plus **MisterRogersRenamerCore** library using **SwiftUI** and **MVVM**:
+**MisterRogersRenamer** ships as a macOS **.app** (Xcode project under [`MacApp/`](MacApp/)) linking the **`MisterRogersRenamerCore`** SwiftPM library using **SwiftUI** and **MVVM**:
 
 - **Models** — `Episode`, `EpisodeDatabase`, `BundledEpisodeDataManifest` — [`Sources/MisterRogersRenamerCore/Models/`](Sources/MisterRogersRenamerCore/Models/)
 - **Services** — `FileUtils`, extractors, `FilenameFormatter`, `RenameService`, `EpisodeCatalog`, TheTVDB client/cache, Keychain key store — [`Sources/MisterRogersRenamerCore/Services/`](Sources/MisterRogersRenamerCore/Services/)
 - **ViewModel** — `RenameViewModel` — [`Sources/MisterRogersRenamerCore/ViewModels/RenameViewModel.swift`](Sources/MisterRogersRenamerCore/ViewModels/RenameViewModel.swift)
 - **Views** — [`Sources/MisterRogersRenamerCore/Views/`](Sources/MisterRogersRenamerCore/Views/)
-- **App shell** — `@main` — [`Sources/MisterRogersRenamer/AppEntry.swift`](Sources/MisterRogersRenamer/AppEntry.swift)
+- **App shell** — `@main` — [`MacApp/MisterRogersRenamer/AppEntry.swift`](MacApp/MisterRogersRenamer/AppEntry.swift)
 
 ## Data flow
 

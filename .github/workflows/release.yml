@@ -1,4 +1,4 @@
-# Build release binary and publish to GitHub Releases (unsigned).
+# Build release .app bundle and publish to GitHub Releases (zip, unsigned).
 # https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases
 name: Release
 
@@ -38,21 +38,29 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          swift build -c release
+          DERIVED="$(mktemp -d)"
+          trap 'rm -rf "${DERIVED}"' EXIT
+          xcodebuild -project "MacApp/MisterRogersRenamer.xcodeproj" \
+            -scheme MisterRogersRenamer \
+            -configuration Release \
+            -destination "platform=macOS" \
+            -derivedDataPath "${DERIVED}" \
+            build
           ARCH=$(uname -m)
-          BIN="MisterRogersRenamer-macos-${ARCH}"
-          cp ".build/release/MisterRogersRenamer" "${BIN}"
-          chmod +x "${BIN}"
+          APP="${DERIVED}/Build/Products/Release/MisterRogersRenamer.app"
+          ZIP="MisterRogersRenamer-macos-${ARCH}.zip"
+          test -d "${APP}"
+          ditto -c -k --keepParent "${APP}" "${ZIP}"
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             TAG="${{ inputs.tag }}"
           else
             TAG="${GITHUB_REF_NAME}"
           fi
           if gh release view "${TAG}" >/dev/null 2>&1; then
-            gh release upload "${TAG}" "${BIN}" --clobber
+            gh release upload "${TAG}" "${ZIP}" --clobber
           else
             NOTES_FILE="$(mktemp)"
-            trap 'rm -f "${NOTES_FILE}"' EXIT
+            trap 'rm -f "${NOTES_FILE}"; rm -rf "${DERIVED}"' EXIT
             if python3 Scripts/compose_github_release_notes.py \
               --tag "${TAG}" \
               --repo "${GITHUB_REPOSITORY}" > "${NOTES_FILE}"; then
@@ -60,9 +68,9 @@ jobs:
                 --verify-tag \
                 --title "${TAG}" \
                 --notes-file "${NOTES_FILE}" \
-                "${BIN}"
+                "${ZIP}"
             else
               echo "::warning::compose_github_release_notes.py failed — falling back to --generate-notes." >&2
-              gh release create "${TAG}" --verify-tag --title "${TAG}" --generate-notes "${BIN}"
+              gh release create "${TAG}" --verify-tag --title "${TAG}" --generate-notes "${ZIP}"
             fi
           fi

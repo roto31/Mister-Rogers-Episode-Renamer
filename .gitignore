@@ -2,6 +2,7 @@
 .build/
 .swiftpm/
 DerivedData/
+MacApp/DerivedData/
 *.xcodeproj
 *.xcworkspace
 !default.pbxuser
@@ -11,3 +12,7 @@ Scripts/.cache/
 __pycache__/
 *.pyc
 .env
+
+# Xcode intermediates + shipped local releases (folders only; keep build/Releases/README.md)
+build/DerivedData/
+build/Releases/*/

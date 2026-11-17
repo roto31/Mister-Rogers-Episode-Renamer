@@ -4,8 +4,8 @@ This document describes how maintainers cut releases and how **Semantic Versioni
 
 ## Artifacts
 
-- **Current default:** Unsigned **`MisterRogersRenamer`** executable from `swift build -c release` (see [BUILD_GUIDE.md](BUILD_GUIDE.md)). The release workflow uploads `MisterRogersRenamer-macos-<arch>` (runner architecture, e.g. `arm64` or `x86_64`) to [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases).
-- **Signed `.app` bundles** are out of scope for the automated workflow; add a separate pipeline later if needed.
+- **Current default:** Unsigned **`MisterRogersRenamer.app`** built with **`xcodebuild`** ([`MacApp/MisterRogersRenamer.xcodeproj`](MacApp/MisterRogersRenamer.xcodeproj)), zipped with **`ditto -c -k --keepParent`** ([`BUILD_GUIDE.md`](BUILD_GUIDE.md)). The release workflow uploads **`MisterRogersRenamer-macos-<arch>.zip`** (runner architecture, e.g. `arm64` or `x86_64`) containing the app bundle to [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases). Users unzip and open the `.app`; **Developer ID + notarization** remain optional follow-up.
+- **Local maintainers:** Run **`Scripts/package_local_release.sh`** to install the same `.app` + zip under **`build/Releases/<semver>/macos-<arch>/`** (persistent on disk; see [`build/Releases/README.md`](build/Releases/README.md)); align **`MARKETING_VERSION`** / **`CHANGELOG.md`** / git tag per the flow below.
 
 ## Release flow
 
@@ -19,14 +19,14 @@ flowchart TD
     E --> F[Create annotated vX.Y.Z tag]
     F --> G[Push tag]
     G --> H[Release workflow verifies catalog]
-    H --> I[Build release executable]
+    H --> I[Build release .app and zip]
     I --> J[Create or update GitHub Release]
-    J --> K[Attach macOS binary and generated notes]
+    J --> K[Attach zip with generated notes]
 ```
 
 ## Artifact boundary: bundled catalog vs downloadable data (**Project decision**)
 
-- **Shipped inside the tagged binary:** The bundled **`episodes.json`** and sidecar **`episodes.manifest.json`** (see [`Sources/MisterRogersRenamerCore/Resources/`](Sources/MisterRogersRenamerCore/Resources/)). Any revision to bundled episode rows or the manifest’s `contentSha256` requires **at least one SemVer bump** (almost always PATCH) **and** a new `v*` tag before users can pick up that data—not a silent re-upload under the same version.
+- **Shipped inside the tagged `.app`:** The bundled **`episodes.json`** and sidecar **`episodes.manifest.json`** (see [`Sources/MisterRogersRenamerCore/Resources/`](Sources/MisterRogersRenamerCore/Resources/)). Any revision to bundled episode rows or the manifest’s `contentSha256` requires **at least one SemVer bump** (almost always PATCH) **and** a new `v*` tag before users can pick up that data—not a silent re-upload under the same version.
 - **Runtime / not versioned by this repo:** TheTVDB cache files under Application Support (`tvdb-{seriesId}-{lang}.json`); refreshing them does **not** require an app release. Users delete those files to force a refetch; see README.
 - **Future (Option C — “no SemVer bump for data-only”)** is viable only after episode data is **outside** the SemVer‑tagged artifact—for example downloadable sidecar manifests, CDN-hosted packages, or a separate release channel—and the team documents how users pin or roll back that stream. Until then, bundled data rides every app release alongside code.
 
@@ -65,11 +65,11 @@ When the manifest’s `contentSha256` changed, mention **`dataRevision`** explic
    git push origin v1.2.3
    ```
 
-4. **GitHub Actions** [Release workflow](.github/workflows/release.yml) runs on push of `v*`, verifies the bundled catalog fingerprint, builds the binary, and creates or updates the GitHub **Release** (composed notes prepend **dataRevision / SHA‑256**, then GitHub‑generated changelog when available).
+4. **GitHub Actions** [Release workflow](.github/workflows/release.yml) runs on push of `v*`, verifies the bundled catalog fingerprint, builds the **`MisterRogersRenamer`** app (**Release**) with **`xcodebuild`**, and creates or updates the GitHub **Release** with a **`MisterRogersRenamer-macos-<arch>.zip`** (composed notes prepend **dataRevision / SHA‑256**, then GitHub‑generated changelog when available).
 
 **Manual dispatch** (e.g. re-upload asset for an existing tag):
 
-- Actions → **Release** → **Run workflow** → enter the existing tag (e.g. `v1.2.3`). The workflow checks out that tag, builds, and uploads the binary (creates the Release if missing, otherwise replaces the asset).
+- Actions → **Release** → **Run workflow** → enter the existing tag (e.g. `v1.2.3`). The workflow checks out that tag, builds **`MisterRogersRenamer.app`**, zips it, and uploads **`MisterRogersRenamer-macos-<arch>.zip`** (creates the Release if missing, otherwise replaces the asset).
 
 ## SemVer and bundled data vs. code
 
